@@ -914,3 +914,10 @@ go_repository(
     sum = "h1:go1bK/D/BFZV2I8cIQd1NKEZ+0owSTG1fDTci4IqFcE=",
     version = "v0.0.0-20200804184101-5ec99f83aff1",
 )
+
+go_repository(
+    name = "com_github_panjf2000_ants_v2",
+    importpath = "github.com/panjf2000/ants/v2",
+    sum = "h1:MZnw2JRyTJxFwtaMtUJcwE618wKD04POWk2gwwP4E2M=",
+    version = "v2.4.7",
+)
