@@ -24,6 +24,8 @@ type iClient interface {
 	ClosePR(org, repo string, number int32) error
 	CreatePRComment(org, repo string, number int32, comment string) error
 	ListPRComments(org, repo string, number int32) ([]sdk.PullRequestComments, error)
+	GetPRCommits(org, repo string, number int32) ([]sdk.PullRequestCommits, error)
+	ListPROperationLogs(org, repo string, number int32) ([]sdk.OperateLog, error)
 }
 
 func newRobot(cli iClient, p *ants.Pool, cfg *botConfig, botName string) *robot {
@@ -83,6 +85,8 @@ func (bot *robot) filterRepos(ctx context.Context, in chan<- string, log *logrus
 				continue
 			}
 
+			log.Infof("load %s all repos ", v)
+
 			rps, err := bot.cli.GetRepos(v)
 			if err != nil {
 				log.Error(err)
@@ -103,19 +107,19 @@ func (bot *robot) processRepos(ctx context.Context, out <-chan string, log *logr
 		threshold = 1
 	}
 
-	bot.wg.Add(threshold)
-
 	for i := 0; i < threshold; i++ {
+		bot.wg.Add(1)
+
 		go func() {
 			defer bot.wg.Done()
 
 			for v := range out {
 				if isCancelled(ctx) {
-					break
+					continue
 				}
 
 				if err := bot.genTask(ctx, v, log); err != nil {
-					log.Error(err)
+					log.Errorf("gen task for %s occur error: %s", v, err.Error())
 				}
 			}
 		}()
