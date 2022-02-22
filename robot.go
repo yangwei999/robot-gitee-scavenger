@@ -92,6 +92,8 @@ func (bot *robot) filterRepos(ctx context.Context, in chan<- string, log *logrus
 				log.Error(err)
 			}
 
+			log.Infof("load %d repos from %s org", len(rps), v)
+
 			for _, r := range rps {
 				validSend(r.GetFullName())
 			}

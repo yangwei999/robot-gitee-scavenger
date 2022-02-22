@@ -14,8 +14,8 @@ import (
 const (
 	prefixMergeRemind = "***PR Merge Reminder from Scavenger Bot:*** \n"
 	prefixClosureTips = "***PR Closure Tips from Scavenger Bot:*** \n"
-	closureTips       = "%s @%s PR was closed for more than %d days of inactivity. You can recreate the PR if you need to merge the code."
-	mergeRemind       = `%s PR has been inactive for %d days and will be closed after %d days due to persistent inactivity becoming obsolete.
+	closureTips       = "%s @%s This PR was closed for more than %d days of inactivity. You can recreate the PR if you need to merge the code."
+	mergeRemind       = `%s This PR has been inactive (As no new commits、comments、configurations) for %d days and will be closed after %d days due to persistent inactivity becoming obsolete.
 Please track the PR merging process in time, and respond according to the relevant prompts given by the robot to speed up the PR merging.`
 )
 
