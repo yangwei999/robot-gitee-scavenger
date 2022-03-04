@@ -14,9 +14,12 @@ import (
 const (
 	prefixMergeRemind = "***PR Merge Reminder from Scavenger:*** \n"
 	prefixClosureTips = "***PR Closure Tips from Scavenger:*** \n"
-	closureTips       = "%s @%s This PR was closed for more than %d days of inactivity. You can recreate the PR if you need to merge the code."
-	mergeRemind       = `%s This PR has been inactive (As no new commits、comments、configurations) for %d days and will be closed after %d days due to persistent inactivity becoming obsolete.
-Please track the PR merging process in time, and respond according to the relevant prompts given by the robot to speed up the PR merging.`
+	closureTips       = `%s @%s This PR was closed for more than %d days of inactivity. You can recreate the PR if you need to merge the code.
+该PR因闲置超过%d天而被关闭。如果需要合入代码，您可以重新创建PR。`
+	mergeRemind = `%s This PR has been inactive for %d days (as no new commits, comments, configurations) and will be closed as it becomes obsolete after %d days of continued inactivity.
+Please track the PR merging process in time, and respond according to the relevant prompts given by the robot to speed up the PR merging.
+该PR已经闲置%d天（因没有新的提交、评论、配置）且将因继续闲置%d天后变得过时而被关闭。
+请及时跟踪PR的合入流程并根据机器人给出的提示做出相应的响应以加速PR的合入。`
 )
 
 type tasker interface {
@@ -52,7 +55,7 @@ func (prt *prTask) exec(log *logrus.Entry) {
 }
 
 func (prt *prTask) handlePRClose(log *logrus.Entry) {
-	comment := fmt.Sprintf(closureTips, prefixClosureTips, prt.pr.User.Login, prt.maxOpenTime)
+	comment := fmt.Sprintf(closureTips, prefixClosureTips, prt.pr.User.Login, prt.maxOpenTime, prt.maxOpenTime)
 
 	if err := prt.cli.CreatePRComment(prt.org, prt.repo, prt.pr.Number, comment); err != nil {
 		log.Error(err)
@@ -89,7 +92,7 @@ func (prt *prTask) handleRemindMerge(comments []sdk.PullRequestComments, t strin
 
 func (prt *prTask) addMergeRemindComment(inactiveTime int, lastActiveTime string, log *logrus.Entry) {
 	d := prt.maxOpenTime - timeIntervalFromNow(lastActiveTime)
-	comment := fmt.Sprintf(mergeRemind, prefixMergeRemind, inactiveTime, d)
+	comment := fmt.Sprintf(mergeRemind, prefixMergeRemind, inactiveTime, d, inactiveTime, d)
 
 	if err := prt.cli.CreatePRComment(prt.org, prt.repo, prt.pr.Number, comment); err != nil {
 		log.Error(err)
