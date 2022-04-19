@@ -40,9 +40,20 @@ type prTask struct {
 }
 
 func (prt *prTask) exec(log *logrus.Entry) {
-	bComments, cComments := prt.separateComments(log)
+	bComments, cComments, err := prt.separateComments()
+	if err != nil {
+		log.Error(err)
 
-	t := prt.prLastActiveTime(cComments, log)
+		return
+	}
+
+	t, err := prt.prLastActiveTime(cComments)
+	if err != nil {
+		log.WithError(err).Errorf("%s/%s:%d  get lastActiveTime error", prt.org, prt.repo, prt.pr.Number)
+
+		return
+	}
+
 	log.Infof("%s/%s:%d  lastActiveTime:%s", prt.org, prt.repo, prt.pr.Number, t)
 
 	if prt.shouldClosed(t) {
@@ -113,31 +124,39 @@ func (prt *prTask) findRecentMergeReminder(comments []sdk.PullRequestComments) (
 	return
 }
 
-func (prt *prTask) prLastActiveTime(comments []sdk.PullRequestComments, log *logrus.Entry) string {
+func (prt *prTask) prLastActiveTime(comments []sdk.PullRequestComments) (string, error) {
 	lastActiveTime := prt.pr.CreatedAt
 
 	if len(comments) > 0 && t1BeforeT2(lastActiveTime, comments[0].UpdatedAt) {
 		lastActiveTime = comments[0].UpdatedAt
 	}
 
-	if t := prt.lastOperateTime(log); t != "" && t1BeforeT2(lastActiveTime, t) {
+	t, err := prt.lastOperateTime()
+	if err != nil {
+		return lastActiveTime, err
+	}
+
+	if t != "" && t1BeforeT2(lastActiveTime, t) {
 		lastActiveTime = t
 	}
 
-	if t := prt.lastCommitTime(log); t != "" && t1BeforeT2(lastActiveTime, t) {
+	t, err = prt.lastCommitTime()
+	if err != nil {
+		return lastActiveTime, err
+	}
+
+	if t != "" && t1BeforeT2(lastActiveTime, t) {
 		lastActiveTime = t
 	}
 
-	return lastActiveTime
+	return lastActiveTime, nil
 }
 
 // separateComments Separate the comments of the robot and the comments of ordinary users
 // and sort them in reverse order of update time.
-func (prt *prTask) separateComments(log *logrus.Entry) (botComments, commComments []sdk.PullRequestComments) {
+func (prt *prTask) separateComments() (botComments, commComments []sdk.PullRequestComments, err error) {
 	comments, err := prt.cli.ListPRComments(prt.org, prt.repo, prt.pr.Number)
 	if err != nil {
-		log.Error(err)
-
 		return
 	}
 
@@ -163,15 +182,13 @@ func (prt *prTask) separateComments(log *logrus.Entry) (botComments, commComment
 		})
 	}
 
-	return bcs, ccs
+	return bcs, ccs, nil
 }
 
-func (prt *prTask) lastOperateTime(log *logrus.Entry) string {
+func (prt *prTask) lastOperateTime() (string, error) {
 	logs, err := prt.cli.ListPROperationLogs(prt.org, prt.repo, prt.pr.Number)
 	if err != nil {
-		log.Error(err)
-
-		return ""
+		return "", err
 	}
 
 	lastTime := ""
@@ -182,15 +199,13 @@ func (prt *prTask) lastOperateTime(log *logrus.Entry) string {
 		}
 	}
 
-	return lastTime
+	return lastTime, nil
 }
 
-func (prt *prTask) lastCommitTime(log *logrus.Entry) string {
+func (prt *prTask) lastCommitTime() (string, error) {
 	commits, err := prt.cli.GetPRCommits(prt.org, prt.repo, prt.pr.Number)
 	if err != nil {
-		log.Error(err)
-
-		return ""
+		return "", err
 	}
 
 	lastCommitTime := ""
@@ -202,7 +217,7 @@ func (prt *prTask) lastCommitTime(log *logrus.Entry) string {
 		}
 	}
 
-	return lastCommitTime
+	return lastCommitTime, nil
 }
 
 func t1BeforeT2(t1, t2 string) bool {
