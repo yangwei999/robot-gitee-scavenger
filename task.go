@@ -19,7 +19,9 @@ const (
 	mergeRemind = `%s This PR has been inactive for %d days (as no new commits, comments, configurations) and will be closed as it becomes obsolete after %d days of continued inactivity.
 Please track the PR merging process in time, and respond according to the relevant prompts given by the robot to speed up the PR merging.
 该PR已经闲置%d天（因没有新的提交、评论、配置）且将因继续闲置%d天后变得过时而被关闭。
-请及时跟踪PR的合入流程并根据机器人给出的提示做出相应的响应以加速PR的合入。`
+请及时跟踪PR的合入流程并根据机器人给出的提示做出相应的响应以加速PR的合入。
+@%s
+`
 )
 
 type tasker interface {
@@ -103,7 +105,7 @@ func (prt *prTask) handleRemindMerge(comments []sdk.PullRequestComments, t strin
 
 func (prt *prTask) addMergeRemindComment(inactiveTime int, lastActiveTime string, log *logrus.Entry) {
 	d := prt.maxOpenTime - timeIntervalFromNow(lastActiveTime)
-	comment := fmt.Sprintf(mergeRemind, prefixMergeRemind, inactiveTime, d, inactiveTime, d)
+	comment := fmt.Sprintf(mergeRemind, prefixMergeRemind, inactiveTime, d, inactiveTime, d, prt.pr.User.Login)
 
 	if err := prt.cli.CreatePRComment(prt.org, prt.repo, prt.pr.Number, comment); err != nil {
 		log.Error(err)
